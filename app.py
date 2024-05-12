@@ -6,6 +6,15 @@ from apikey import google_gemini_api_key, openai_api_key
 from openai._client import (
     OpenAI,
 )  # very important to write openai.client due to version of openai blah blah
+from streamlit_carousel import carousel
+
+
+single_image = dict(
+    title="",
+    text="",
+    interval=None,
+    img="",
+)
 
 
 client = OpenAI(api_key=openai_api_key)
@@ -58,20 +67,29 @@ with st.sidebar:
     prompt_parts = [
         f'Generate a comprehensive, engaging blog post relevant to the given title "{blog_title}" and keywords "{keywords}". Make sure to incorporate these keywords into the blog. The blog should be approximately {num_words} '
     ]
-    response = model.generate_content(prompt_parts)
-
     submit_button = st.button("Generate Blog")
 
 if submit_button:
-    image_response = client.images.generate(
-        model="dall-e-3",
-        prompt="a white siamese cat",
-        size="1024x1024",
-        quality="standard",
-        n=1,
-    )
+    response = model.generate_content(prompt_parts)
+    images = []
+    images_gallery = []
 
-    image_url = response.data[0].url
-    st.image(image_url, caption="Generated Image")
+    for i in range(num_images):
+        image_response = client.images.generate(
+            model="dall-e-3",
+            prompt=f"Generate an image based on the title : {blog_title}",
+            size="1024x1024",
+            quality="standard",
+            n=1,
+        )
+        new_image = single_image.copy()  # copying dict into new_image
+        new_image["title"] = f"Image{i+1}"
+        new_image["text"] = f"{blog_title}"
+        new_image["img"] = image_response.data[0].url
+        images_gallery.append(new_image)
+
+    st.title("Your Blog Images : ")
+    carousel(items=images_gallery, width=1)
+
     st.title("Your Blog Post : ")
     st.write(response.text)
